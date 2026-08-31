@@ -1,0 +1,110 @@
+[
+  {
+    "example_id": 1,
+    "sample_index": 4,
+    "prediction": 1,
+    "prediction_label": "HIGH RISK",
+    "probability": 0.9536992047663826,
+    "confidence": "HIGH",
+    "actual": 1,
+    "correct": true,
+    "top_contributing_features": [
+      {
+        "rank": 1,
+        "feature": "systolic_bp_mmhg",
+        "value": 1.7203600081972377,
+        "shap_contribution": 1.7724561026224315,
+        "direction": "increases",
+        "impact_magnitude": 1.7724561026224315
+      },
+      {
+        "rank": 2,
+        "feature": "activity_level",
+        "value": -1.0189704859818498,
+        "shap_contribution": 1.3127475865199594,
+        "direction": "increases",
+        "impact_magnitude": 1.3127475865199594
+      },
+      {
+        "rank": 3,
+        "feature": "diastolic_bp_mmhg",
+        "value": 1.3256369433207111,
+        "shap_contribution": 0.7830316457581759,
+        "direction": "increases",
+        "impact_magnitude": 0.7830316457581759
+      }
+    ]
+  },
+  {
+    "example_id": 2,
+    "sample_index": 24,
+    "prediction": 1,
+    "prediction_label": "HIGH RISK",
+    "probability": 0.8815206316670956,
+    "confidence": "HIGH",
+    "actual": 0,
+    "correct": false,
+    "top_contributing_features": [
+      {
+        "rank": 1,
+        "feature": "heart_rate_bpm",
+        "value": 1.5657956118926544,
+        "shap_contribution": 2.7678259664435676,
+        "direction": "increases",
+        "impact_magnitude": 2.7678259664435676
+      },
+      {
+        "rank": 2,
+        "feature": "systolic_bp_mmhg",
+        "value": 1.1329713880997891,
+        "shap_contribution": 1.0635762309856422,
+        "direction": "increases",
+        "impact_magnitude": 1.0635762309856422
+      },
+      {
+        "rank": 3,
+        "feature": "activity_level",
+        "value": 1.2461944874578603,
+        "shap_contribution": -1.0328600032380864,
+        "direction": "decreases",
+        "impact_magnitude": 1.0328600032380864
+      }
+    ]
+  },
+  {
+    "example_id": 3,
+    "sample_index": 33,
+    "prediction": 1,
+    "prediction_label": "HIGH RISK",
+    "probability": 0.572051934122349,
+    "confidence": "MEDIUM",
+    "actual": 0,
+    "correct": false,
+    "top_contributing_features": [
+      {
+        "rank": 1,
+        "feature": "activity_level",
+        "value": -1.0189704859818498,
+        "shap_contribution": 1.0642972014742327,
+        "direction": "increases",
+        "impact_magnitude": 1.0642972014742327
+      },
+      {
+        "rank": 2,
+        "feature": "systolic_bp_mmhg",
+        "value": 1.192705824041902,
+        "shap_contribution": 0.899620378716044,
+        "direction": "increases",
+        "impact_magnitude": 0.899620378716044
+      },
+      {
+        "rank": 3,
+        "feature": "diastolic_bp_mmhg",
+        "value": -0.4065868644452632,
+        "shap_contribution": -0.3599717509815291,
+        "direction": "decreases",
+        "impact_magnitude": 0.3599717509815291
+      }
+    ]
+  }
+]

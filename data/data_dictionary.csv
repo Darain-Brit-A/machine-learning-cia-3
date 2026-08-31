@@ -1,0 +1,17 @@
+Column,Description
+patient_id,Unique identifier for each synthetic patient (0 to 999)
+age,Patient age in years (30-85)
+sex,"Biological sex: 0=Female, 1=Male"
+heart_rate_bpm,Heart rate measured by wearable sensor (beats per minute)
+spo2_percent,Blood oxygen saturation from wearable sensor (%)
+body_temperature_c,Body temperature from wearable sensor (Celsius)
+systolic_bp_mmhg,Systolic blood pressure measurement (mm Hg)
+diastolic_bp_mmhg,Diastolic blood pressure measurement (mm Hg)
+ecg_hr_bpm,Heart rate derived from ECG signal (beats per minute)
+ecg_rr_interval_ms,ECG RR interval (milliseconds) - time between heartbeats
+ecg_rmssd_ms,"Root Mean Square of Successive Differences (HRV measure, ms)"
+ecg_sdnn_ms,"Standard Deviation of NN intervals (HRV measure, ms)"
+ecg_signal_quality,ECG signal quality (0-100%)
+activity_level,"Physical activity level: 0=Rest, 1=Light, 2=Moderate, 3=Vigorous"
+timestamp,ISO format timestamp of the measurement
+label,"Target variable: 0=Lower Risk, 1=Higher Risk (SYNTHETIC - FOR DEVELOPMENT ONLY)"

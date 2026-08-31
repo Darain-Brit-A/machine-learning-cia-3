@@ -1,0 +1,26 @@
+{
+  "feature_cols": [
+    "age",
+    "sex",
+    "heart_rate_bpm",
+    "spo2_percent",
+    "body_temperature_c",
+    "systolic_bp_mmhg",
+    "diastolic_bp_mmhg",
+    "activity_level"
+  ],
+  "numerical_cols": [
+    "age",
+    "sex",
+    "heart_rate_bpm",
+    "spo2_percent",
+    "body_temperature_c",
+    "systolic_bp_mmhg",
+    "diastolic_bp_mmhg",
+    "activity_level"
+  ],
+  "categorical_cols": [],
+  "n_features": 8,
+  "n_train_samples": 13767,
+  "n_test_samples": 5833
+}

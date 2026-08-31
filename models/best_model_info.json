@@ -1,0 +1,17 @@
+{
+  "best_model": "Logistic Regression",
+  "training_timestamp": "2026-08-31T15:13:27.379960",
+  "training_samples": 13767,
+  "test_samples": 5833,
+  "feature_count": 8,
+  "features": [
+    "age",
+    "sex",
+    "heart_rate_bpm",
+    "spo2_percent",
+    "body_temperature_c",
+    "systolic_bp_mmhg",
+    "diastolic_bp_mmhg",
+    "activity_level"
+  ]
+}
