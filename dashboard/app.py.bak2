@@ -37,13 +37,6 @@ st.markdown("""
     .stApp {
         background: linear-gradient(135deg, #f4f8ff 0%, #eef7f4 100%);
     }
-    /* Force all headings and text to be dark/legible on light background */
-    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
-    .stApp p, .stApp label, .stApp span, .stApp div {
-        color: #1a202c;
-    }
-    .stApp [data-testid="stMetricLabel"] { color: #4b5563 !important; }
-    .stApp [data-testid="stMetricValue"] { color: #111827 !important; }
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
@@ -182,7 +175,7 @@ def create_vital_gauge(value, min_val, max_val, optimal_min, optimal_max, title,
                 'value': optimal_max
             }
         },
-        # suffix=unit,
+        suffix=unit,
         number={'suffix': unit}
     )])
     
@@ -379,26 +372,33 @@ def main():
         
         with col1:
             st.metric(
-                "Heart Rate (bpm)",
-                f"{reading['heart_rate_bpm']:.0f}"
+                "Heart Rate",
+                f"{reading['heart_rate_bpm']:.0f}",
+                "bpm",
+                delta=None
             )
         
         with col2:
             st.metric(
-                "SpO₂ (%)",
-                f"{reading['spo2_percent']:.1f}"
+                "SpO₂",
+                f"{reading['spo2_percent']:.1f}",
+                "%",
+                delta=None
             )
         
         with col3:
             st.metric(
-                "Temperature (°C)",
-                f"{reading['body_temperature_c']:.1f}"
+                "Temperature",
+                f"{reading['body_temperature_c']:.1f}",
+                "°C",
+                delta=None
             )
         
         with col4:
             st.metric(
                 "Risk Score",
-                f"{prediction['risk_score']:.1%}"
+                f"{prediction['risk_score']:.1%}",
+                delta=None
             )
         
         # ====== VITAL GAUGES ======
@@ -437,13 +437,13 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.metric("Systolic BP (mm Hg)", f"{reading['systolic_bp_mmhg']:.0f}")
-            st.metric("Diastolic BP (mm Hg)", f"{reading['diastolic_bp_mmhg']:.0f}")
+            st.metric("Systolic BP", f"{reading['systolic_bp_mmhg']:.0f}", "mm Hg")
+            st.metric("Diastolic BP", f"{reading['diastolic_bp_mmhg']:.0f}", "mm Hg")
             
             if reading.get('ecg_signal_quality'):
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    st.metric("ECG Signal Quality (%)", f"{reading['ecg_signal_quality']:.0f}")
+                    st.metric("ECG Signal Quality", f"{reading['ecg_signal_quality']:.0f}", "%")
                 with col_b:
                     st.metric("Activity Level", reading.get('activity_level', 0))
         

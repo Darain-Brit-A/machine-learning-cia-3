@@ -4,7 +4,7 @@
     "sample_index": 4,
     "prediction": 1,
     "prediction_label": "HIGH RISK",
-    "probability": 0.9536992047663826,
+    "probability": 0.9654117633163116,
     "confidence": "HIGH",
     "actual": 1,
     "correct": true,
@@ -12,98 +12,98 @@
       {
         "rank": 1,
         "feature": "systolic_bp_mmhg",
-        "value": 1.7203600081972377,
-        "shap_contribution": 1.7724561026224315,
+        "value": 1.7354818906735512,
+        "shap_contribution": 1.8612083605796959,
         "direction": "increases",
-        "impact_magnitude": 1.7724561026224315
+        "impact_magnitude": 1.8612083605796959
       },
       {
         "rank": 2,
         "feature": "activity_level",
-        "value": -1.0189704859818498,
-        "shap_contribution": 1.3127475865199594,
+        "value": -1.0176494133564773,
+        "shap_contribution": 1.314853666995415,
         "direction": "increases",
-        "impact_magnitude": 1.3127475865199594
+        "impact_magnitude": 1.314853666995415
       },
       {
         "rank": 3,
-        "feature": "diastolic_bp_mmhg",
-        "value": 1.3256369433207111,
-        "shap_contribution": 0.7830316457581759,
+        "feature": "spo2_percent",
+        "value": 1.5222665889573663,
+        "shap_contribution": 0.7340598844634844,
         "direction": "increases",
-        "impact_magnitude": 0.7830316457581759
+        "impact_magnitude": 0.7340598844634844
       }
     ]
   },
   {
     "example_id": 2,
-    "sample_index": 24,
+    "sample_index": 23,
     "prediction": 1,
     "prediction_label": "HIGH RISK",
-    "probability": 0.8815206316670956,
+    "probability": 0.8179234533145118,
     "confidence": "HIGH",
     "actual": 0,
     "correct": false,
     "top_contributing_features": [
       {
         "rank": 1,
-        "feature": "heart_rate_bpm",
-        "value": 1.5657956118926544,
-        "shap_contribution": 2.7678259664435676,
+        "feature": "systolic_bp_mmhg",
+        "value": 3.169392033896938,
+        "shap_contribution": 3.2565924057827953,
         "direction": "increases",
-        "impact_magnitude": 2.7678259664435676
+        "impact_magnitude": 3.2565924057827953
       },
       {
         "rank": 2,
-        "feature": "systolic_bp_mmhg",
-        "value": 1.1329713880997891,
-        "shap_contribution": 1.0635762309856422,
+        "feature": "activity_level",
+        "value": -1.0176494133564773,
+        "shap_contribution": 1.1264541933826775,
         "direction": "increases",
-        "impact_magnitude": 1.0635762309856422
+        "impact_magnitude": 1.1264541933826775
       },
       {
         "rank": 3,
-        "feature": "activity_level",
-        "value": 1.2461944874578603,
-        "shap_contribution": -1.0328600032380864,
+        "feature": "heart_rate_bpm",
+        "value": -0.6038315314099848,
+        "shap_contribution": -0.8093134274654169,
         "direction": "decreases",
-        "impact_magnitude": 1.0328600032380864
+        "impact_magnitude": 0.8093134274654169
       }
     ]
   },
   {
     "example_id": 3,
-    "sample_index": 33,
+    "sample_index": 16,
     "prediction": 1,
     "prediction_label": "HIGH RISK",
-    "probability": 0.572051934122349,
+    "probability": 0.5821072891856374,
     "confidence": "MEDIUM",
     "actual": 0,
     "correct": false,
     "top_contributing_features": [
       {
         "rank": 1,
-        "feature": "activity_level",
-        "value": -1.0189704859818498,
-        "shap_contribution": 1.0642972014742327,
+        "feature": "heart_rate_bpm",
+        "value": 1.114807083940094,
+        "shap_contribution": 1.7519601843007737,
         "direction": "increases",
-        "impact_magnitude": 1.0642972014742327
+        "impact_magnitude": 1.7519601843007737
       },
       {
         "rank": 2,
         "feature": "systolic_bp_mmhg",
-        "value": 1.192705824041902,
-        "shap_contribution": 0.899620378716044,
+        "value": 1.9047629492485332,
+        "shap_contribution": 1.7468112840739383,
         "direction": "increases",
-        "impact_magnitude": 0.899620378716044
+        "impact_magnitude": 1.7468112840739383
       },
       {
         "rank": 3,
-        "feature": "diastolic_bp_mmhg",
-        "value": -0.4065868644452632,
-        "shap_contribution": -0.3599717509815291,
+        "feature": "activity_level",
+        "value": 1.240418439165855,
+        "shap_contribution": -1.3013882733765396,
         "direction": "decreases",
-        "impact_magnitude": 0.3599717509815291
+        "impact_magnitude": 1.3013882733765396
       }
     ]
   }

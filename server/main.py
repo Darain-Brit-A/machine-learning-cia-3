@@ -46,11 +46,14 @@ app.add_middleware(
 )
 
 # Global variables
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODEL_DIR = PROJECT_ROOT / 'models'
+DATA_DIR = PROJECT_ROOT / 'data'
 MODEL = None
 SCALER = None
 SHAP_EXPLAINER = None
 FEATURE_NAMES = None
-DB_PATH = 'data/predictions.db'
+DB_PATH = str(DATA_DIR / 'predictions.db')
 
 
 # ============================================================================
@@ -112,6 +115,7 @@ def get_db_connection():
 
 def initialize_database():
     """Initialize database tables."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     with get_db_connection() as conn:
         conn.execute('''
             CREATE TABLE IF NOT EXISTS readings (
@@ -218,56 +222,53 @@ def save_prediction(
 # ============================================================================
 
 def load_model():
-    """Load trained model, scaler, and feature names."""
+    """Load the trained model, scaler, and feature names produced by the project pipeline."""
     global MODEL, SCALER, FEATURE_NAMES, SHAP_EXPLAINER
-    
+
     try:
-        model_path = Path('models') / 'random_forest.pkl'
-        scaler_path = Path('models') / 'scaler.pkl'
-        features_path = Path('models') / 'feature_names.json'
-        
+        preferred_model = MODEL_DIR / 'logistic_regression.pkl'
+        fallback_model = MODEL_DIR / 'random_forest.pkl'
+        scaler_path = MODEL_DIR / 'scaler.pkl'
+        features_path = MODEL_DIR / 'feature_names.json'
+
+        model_path = preferred_model if preferred_model.exists() else fallback_model
         if not model_path.exists():
             raise FileNotFoundError("Model files not found. Please train models first.")
-        
+        if not scaler_path.exists():
+            raise FileNotFoundError("Scaler file not found. Please train models first.")
+
         MODEL = joblib.load(model_path)
         SCALER = joblib.load(scaler_path)
-        
+
         with open(features_path, 'r') as f:
             FEATURE_NAMES = json.load(f)
-        
-        logger.info("Model loaded successfully")
+
+        logger.info("Model loaded successfully from %s", model_path)
         return True
-        
+
     except Exception as e:
         logger.error(f"Error loading model: {e}")
         return False
 
 
 def prepare_features(reading: SensorReading) -> np.ndarray:
-    """
-    Convert sensor reading to feature array.
-    Handle missing ECG features with defaults.
-    """
+    """Build the exact feature vector expected by the trained model."""
+    if FEATURE_NAMES is None:
+        raise ValueError("Model feature metadata has not been loaded.")
+
     features = {
-        'age': 60,  # From dataset generation, average
-        'sex': 0,
-        'heart_rate_bpm': reading.heart_rate_bpm,
-        'spo2_percent': reading.spo2_percent,
-        'body_temperature_c': reading.body_temperature_c,
-        'systolic_bp_mmhg': reading.systolic_bp_mmhg,
-        'diastolic_bp_mmhg': reading.diastolic_bp_mmhg,
-        'ecg_hr_bpm': reading.ecg_hr_bpm or reading.heart_rate_bpm,
-        'ecg_rr_interval_ms': reading.ecg_rr_interval_ms or (60000 / reading.heart_rate_bpm),
-        'ecg_rmssd_ms': reading.ecg_rmssd_ms or 50.0,
-        'ecg_sdnn_ms': reading.ecg_sdnn_ms or 70.0,
-        'ecg_signal_quality': reading.ecg_signal_quality or 80.0,
-        'activity_level': reading.activity_level or 0
+        'age': float(reading.age if hasattr(reading, 'age') else 60),
+        'sex': float(reading.sex if hasattr(reading, 'sex') else 0),
+        'heart_rate_bpm': float(reading.heart_rate_bpm),
+        'spo2_percent': float(reading.spo2_percent),
+        'body_temperature_c': float(reading.body_temperature_c),
+        'systolic_bp_mmhg': float(reading.systolic_bp_mmhg),
+        'diastolic_bp_mmhg': float(reading.diastolic_bp_mmhg),
+        'activity_level': float(reading.activity_level or 0)
     }
-    
-    # Create array in feature order
-    feature_array = np.array([[features[f] for f in FEATURE_NAMES]])
-    
-    return feature_array
+
+    ordered = [features.get(name, 0.0) for name in FEATURE_NAMES]
+    return np.array([ordered], dtype=float)
 
 
 def make_prediction(feature_array: np.ndarray) -> tuple:
@@ -291,8 +292,9 @@ def make_prediction(feature_array: np.ndarray) -> tuple:
     confidence = float(max(risk_proba))
     
     # Basic feature importance (using model's feature_importances if available)
+    model_name = type(MODEL).__name__
     explanation = {
-        'model_type': 'Random Forest',
+        'model_type': model_name,
         'prediction_class': 'Higher Risk' if prediction == 1 else 'Lower Risk',
         'risk_score': risk_score,
         'confidence': confidence
@@ -376,6 +378,8 @@ async def root():
 @app.get("/health", tags=["Health"], response_model=HealthStatus)
 async def health_check():
     """Health check endpoint."""
+    if MODEL is None:
+        load_model()
     return HealthStatus(
         status="healthy",
         model_loaded=MODEL is not None,
@@ -393,7 +397,7 @@ async def predict(reading: SensorReading):
     generates SHAP explanation, and stores results.
     """
     
-    if MODEL is None:
+    if MODEL is None and not load_model():
         raise HTTPException(
             status_code=503,
             detail="Model not loaded. Please train models first."
@@ -503,9 +507,9 @@ async def get_latest_prediction(device_id: str):
                 ORDER BY timestamp DESC
                 LIMIT 1
             ''', (device_id,))
-            
-            reading = dict(cursor.fetchone()) if cursor.fetchone() else None
-            
+            reading_row = cursor.fetchone()
+            reading = dict(reading_row) if reading_row else None
+
             # Get latest prediction
             cursor = conn.execute('''
                 SELECT * FROM predictions
@@ -513,13 +517,13 @@ async def get_latest_prediction(device_id: str):
                 ORDER BY timestamp DESC
                 LIMIT 1
             ''', (device_id,))
-            
-            prediction = dict(cursor.fetchone()) if cursor.fetchone() else None
+            prediction_row = cursor.fetchone()
+            prediction = dict(prediction_row) if prediction_row else None
             if prediction:
                 prediction['explanation'] = json.loads(prediction['explanation'])
-            
+
             return {'reading': reading, 'prediction': prediction}
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,8 +1,8 @@
 {
   "best_model": "Logistic Regression",
-  "training_timestamp": "2026-08-31T15:13:27.379960",
-  "training_samples": 13767,
-  "test_samples": 5833,
+  "training_timestamp": "2026-09-02T10:19:35.666911",
+  "training_samples": 14049,
+  "test_samples": 5951,
   "feature_count": 8,
   "features": [
     "age",
