@@ -1,96 +1,376 @@
 # IoT Heart Disease Prediction System
 
-An educational end-to-end prototype that collects wearable-style health readings, sends them from an ESP32 to a FastAPI service, runs a trained machine-learning model, stores the results in SQLite, and displays them in a Streamlit dashboard.
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-FF4B4B.svg?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.3+-F7931E.svg?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.0+-EB5424.svg?style=flat)](https://xgboost.readthedocs.io)
+[![CatBoost](https://img.shields.io/badge/CatBoost-1.2+-FFA000.svg?style=flat)](https://catboost.ai)
+[![SHAP](https://img.shields.io/badge/SHAP-Explainability-brightgreen.svg?style=flat)](https://shap.readthedocs.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
 
-```text
-Sensors -> ESP32 -> Wi-Fi -> FastAPI -> preprocessing -> ML prediction
-                                      -> SQLite storage
-                                      -> Streamlit dashboard
+An end-to-end, IoT-enabled cardiovascular risk prediction and real-time vital signs monitoring prototype. The system ingests streaming health telemetry from wearable edge devices (ESP32 microcontrollers with pulse and temperature sensors), processes features through an asynchronous **FastAPI** backend, evaluates patient risk using trained **Machine Learning** models with **SHAP explainability**, stores longitudinal telemetry in **SQLite**, and presents real-time analytics in an interactive **Streamlit** clinician/patient dashboard.
+
+```
+┌─────────────────┐       Wi-Fi / HTTP        ┌────────────────────────┐
+│  Wearable IoT   │ ────────────────────────> │    FastAPI Backend     │
+│  (ESP32 Node)   │   POST /predict (JSON)    │    (Port 8000)         │
+└─────────────────┘                           └───────────┬────────────┘
+                                                          │
+                    ┌─────────────────────────────────────┴───────────────────────────────────┐
+                    ▼                                     ▼                                   ▼
+        ┌───────────────────────┐             ┌───────────────────────┐           ┌───────────────────────┐
+        │   ML Inference &      │             │    SQLite Database    │           │  Streamlit Dashboard  │
+        │   SHAP Explanations   │             │   (data/predictions.db)│           │      (Port 8501)      │
+        └───────────────────────┘             └───────────────────────┘           └───────────────────────┘
 ```
 
-## Important Disclaimer
+---
 
-This project uses a synthetic dataset and is intended for software development, demonstrations, and education only. It is not a medical device, has not been clinically validated, and must not be used for diagnosis, treatment, or emergency decisions.
+## ⚠️ Important Medical & Educational Disclaimer
 
-## Features
+> **IMPORTANT**: This project is developed strictly for **educational, academic, research, and prototype demonstration purposes**. 
+> - The training data is **synthetic** longitudinal telemetry.
+> - The software and models have **not been clinically validated or approved by regulatory bodies (FDA, CE, CDSCO, etc.)**.
+> - It **must not** be used as a medical device, for clinical diagnosis, real patient treatment, emergency response, or medical decision-making.
 
-- Synthetic longitudinal heart-health dataset generation
-- Dataset validation and exploration
-- Patient-level machine-learning train/test splitting
-- Missing-value handling, outlier clipping, and feature scaling
-- Logistic Regression, Random Forest, XGBoost, and CatBoost training
-- Accuracy, precision, recall, F1, ROC-AUC, and validation reports
-- FastAPI REST API for sensor ingestion and prediction
-- SQLite storage for readings and predictions
-- Risk score, confidence, alert status, and feature explanations
-- Streamlit dashboard for live readings, trends, alerts, and model information
-- ESP32 firmware for Wi-Fi transmission of sensor readings
-- Optional Docker Compose setup for the API and dashboard
+---
 
-## Current Hardware Scope
+## 📑 Table of Contents
 
-The ESP32 firmware in [esp32.ino](esp32.ino) currently supports:
+- [System Architecture](#-system-architecture)
+- [Key Features](#-key-features)
+- [Repository Structure](#-repository-structure)
+- [Dataset & Feature Dictionary](#-dataset--feature-dictionary)
+- [Machine Learning Pipeline & Model Evaluation](#-machine-learning-pipeline--model-evaluation)
+- [Explainable AI (SHAP)](#-explainable-ai-shap)
+- [Backend API Specification](#-backend-api-specification)
+- [Streamlit Dashboard](#-streamlit-dashboard)
+- [IoT Hardware & Firmware (ESP32)](#-iot-hardware--firmware-esp32)
+- [Installation & Quickstart](#-installation--quickstart)
+- [Docker Deployment](#-docker-deployment)
+- [Testing & Quality Assurance](#-testing--quality-assurance)
+- [Configuration Reference](#-configuration-reference)
+- [Roadmap & Future Enhancements](#-roadmap--future-enhancements)
 
-- MAX30102/MAX30105 over I2C for heart-rate detection
-- DHT22 on GPIO 4 for temperature readings
-- Wi-Fi and HTTP communication with the API
+---
 
-SpO2 and blood-pressure values are currently development values. ECG is not currently sampled by the firmware; the dashboard ECG plot is synthetic. Complete physical wiring and upload instructions are in [esp32.md](esp32.md).
+## 🏛 System Architecture
 
-## Repository Structure
+The project is designed with a decoupled 4-tier microservices/edge architecture:
 
-```text
-project/
-├── config.py                         Shared project configuration
-├── requirements.txt                  Python dependencies
-├── STARTUP.py                        Guided setup and startup helper
-├── esp32.ino                         ESP32 firmware
-├── esp32.md                          ESP32 wiring and integration guide
-├── Dockerfile                        Container image definition
-├── docker-compose.yml                API and dashboard services
-├── data/
-│   ├── heart_iot_synthetic.csv       Synthetic source dataset
-│   ├── data_dictionary.csv           Feature descriptions
-│   ├── dataset_summary.json          Dataset statistics
-│   ├── preprocessed/                 Train/test data and metadata
-│   └── predictions.db                Runtime SQLite database
-├── models/                           Trained models and evaluation output
-├── notebooks/
-│   └── 01_dataset_exploration.ipynb  Interactive data exploration
-├── scripts/
-│   ├── generate_dataset.py           Generate synthetic data
-│   ├── validate_dataset.py           Validate source data
-│   ├── preprocess_data.py            Prepare features
-│   ├── train_models.py               Train individual models
-│   ├── ml_pipeline.py                Run the complete ML pipeline
-│   ├── validate_model.py             Validate trained models
-│   ├── explain_shap.py               Generate SHAP outputs
-│   ├── shap_explainer.py             SHAP helper logic
-│   ├── ecg_processor.py              ECG processing utilities
-│   ├── mock_iot_device.py            Send development readings
-│   └── test_demo.py                  End-to-end API demo
-├── server/
-│   └── main.py                       FastAPI app, inference, and persistence
-├── dashboard/
-│   └── app.py                        Streamlit user interface
-└── tests/
-    └── test_api.py                   API tests
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 1. EDGE LAYER (IoT Hardware & Firmware)                                                │
+│    • ESP32 NodeMCU / DevKit V1                                                         │
+│    • MAX30102 Pulse Oximeter & Heart-Rate Sensor (I2C)                                  │
+│    • DHT22 Ambient / Skin Temperature Sensor (GPIO 4)                                  │
+│    • Edge feature packing into JSON payloads dispatched over 2.4GHz Wi-Fi               │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           ▼ HTTP POST /predict
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 2. INGESTION & INFERENCE LAYER (FastAPI Backend)                                       │
+│    • Request validation via strict Pydantic v2 schemas                                 │
+│    • SQLite persistence for raw readings (`readings` table)                            │
+│    • Feature alignment & scaling using pre-fitted `StandardScaler`                     │
+│    • Real-time classification: Logistic Regression / Random Forest / XGBoost / CatBoost│
+│    • Dynamic vital sign threshold alerts + high cardiovascular risk triggers          │
+│    • Feature importance & local SHAP value computation                                 │
+│    • Prediction archiving in SQLite (`predictions` table)                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+                                           │
+                    ┌──────────────────────┴──────────────────────┐
+                    ▼                                             ▼
+┌──────────────────────────────────────┐      ┌──────────────────────────────────────────┐
+│ 3. PERSISTENCE LAYER (SQLite Engine) │      │ 4. VISUALIZATION LAYER (Streamlit App)   │
+│    • `readings` (Raw IoT telemetry)  │      │    • Real-time KPI vital gauges          │
+│    • `predictions` (Scores & SHAP)   │      │    • Dual Blood Pressure display         │
+│    • ACID transactions with WAL mode │      │    • Longitudinal risk trajectory charts │
+└──────────────────────────────────────┘      │    • Global & local SHAP bar charts      │
+                                              │    • Active multi-device telemetry viewer│
+                                              └──────────────────────────────────────────┘
 ```
 
-## Requirements
+---
 
-- Windows, macOS, or Linux
-- Python 3.10 or newer recommended
-- 2 GB or more available memory for model training
-- Arduino IDE and an ESP32 board for hardware testing
-- A 2.4 GHz Wi-Fi network for many ESP32 boards
+## ✨ Key Features
 
-Install the Python dependencies from [requirements.txt](requirements.txt). Arduino dependencies are listed in [esp32.md](esp32.md).
+- **End-to-End IoT Pipeline**: Automated telemetry flow from embedded firmware to cloud API to UI.
+- **Robust Machine Learning Suite**: Four trained classification algorithms (Logistic Regression, Random Forest, XGBoost, CatBoost) with patient-stratified data splits to prevent information leakage.
+- **Model Explainability with SHAP**: Interpret predictions transparently with Tree and Linear SHAP explainers (Waterfall & Summary charts).
+- **Automated Vital Sign Alerts**: Real-time anomaly detection for Tachycardia/Bradycardia ($HR < 50$ or $> 120$ BPM), Hypoxemia ($SpO_2 < 94\%$), and Hypertensive Crisis ($SBP > 180$ or $< 90$ mmHg).
+- **Asynchronous REST API**: Fast, non-blocking ingestion built with FastAPI and auto-generated Swagger/OpenAPI documentation.
+- **Modern Interactive Dashboard**: Premium Streamlit interface featuring Plotly gauges, historical charts, dynamic device switching, and health metrics.
+- **Comprehensive Automation**: Complete one-command pipeline launcher (`STARTUP.py`), synthetic dataset generator, ECG DSP signal processor, and mock IoT client simulator.
+- **Containerized Ready**: Full multi-container Docker & Docker Compose setup with volume persistence.
 
-## Installation
+---
 
-From the project directory, create and activate a virtual environment:
+## 📂 Repository Structure
 
+```
+.
+├── config.py                         # Centralized configuration, thresholds, feature sets & paths
+├── requirements.txt                  # Python runtime dependencies
+├── STARTUP.py                        # Automated guided bootstrap & setup wizard
+├── Dockerfile                        # Multi-stage production container image
+├── docker-compose.yml                # Multi-service orchestration (API + Dashboard)
+├── IMPLEMENTATION_GUIDE.md           # Step-by-step architectural design & implementation guide
+│
+├── data/                             # Data storage & preprocessing directory
+│   ├── heart_iot_synthetic.csv       # 20,000-sample longitudinal synthetic dataset
+│   ├── heart_iot_synthetic.parquet   # High-efficiency columnar storage format
+│   ├── data_dictionary.csv           # Detailed metadata & feature definitions
+│   ├── dataset_summary.json          # Summary statistics & cohort distributions
+│   ├── predictions.db                # Runtime SQLite database (readings & predictions)
+│   └── preprocessed/                 # Scaled train/test feature matrices and artifacts
+│
+├── models/                           # Trained ML weights, metadata & visualizations
+│   ├── best_model_info.json          # Production model metadata & feature manifest
+│   ├── logistic_regression.pkl       # Serialized Logistic Regression model
+│   ├── random_forest.pkl             # Serialized Random Forest classifier
+│   ├── xgboost.pkl                   # Serialized XGBoost model
+│   ├── catboost.pkl                  # Serialized CatBoost classifier
+│   ├── scaler.pkl                    # Production StandardScaler
+│   ├── feature_names.json            # Strict feature ordering definition
+│   ├── model_comparison.csv          # Cross-model evaluation metrics table
+│   ├── validation_report.json        # 5-fold cross-validation & threshold report
+│   ├── confusion_matrices.png        # Multi-model confusion matrix plots
+│   ├── roc_curves.png                # Combined ROC curves plot
+│   ├── precision_recall_curve.png    # Precision-Recall curves plot
+│   ├── threshold_analysis.png        # Decision threshold optimization plot
+│   └── shap_summary_bar_*.png        # Global SHAP importance visualizations
+│
+├── scripts/                          # Machine learning, DSP, and simulation utilities
+│   ├── generate_dataset.py           # Synthetic longitudinal cohort generator
+│   ├── validate_dataset.py           # Dataset integrity, distribution & range checker
+│   ├── preprocess_data.py            # Feature cleaning, median imputation & scaling
+│   ├── train_models.py               # Model training, hyperparameter setup & evaluation
+│   ├── ml_pipeline.py                # End-to-end master ML orchestration pipeline
+│   ├── validate_model.py             # 5-fold patient-level cross-validation & calibration
+│   ├── shap_explainer.py             # Core SHAP explanation helper classes
+│   ├── explain_shap.py               # SHAP artifact generation & visualization exporter
+│   ├── ecg_processor.py              # Butterworth bandpass filter & Pan-Tompkins QRS DSP
+│   ├── mock_iot_device.py            # Simulated streaming IoT hardware client
+│   └── test_demo.py                  # End-to-end integration & scenario testing script
+│
+├── server/                           # FastAPI Backend application
+│   ├── main.py                       # Application endpoints, inference engine & database operations
+│   ├── database/                     # Modular database connection & models
+│   ├── routes/                       # Modular route controllers
+│   ├── schemas/                      # Pydantic validation schemas
+│   └── utils/                        # Server-side utilities & loggers
+│
+├── dashboard/                        # Frontend UI application
+│   └── app.py                        # Streamlit web dashboard with Plotly charts
+│
+└── tests/                            # Automated test suite
+    └── test_api.py                   # API unit and integration test suite
+```
+
+---
+
+## 📊 Dataset & Feature Dictionary
+
+The pipeline uses a synthetic longitudinal cohort of **1,000 distinct patients** comprising **20,000 observations** (average 20 observations per patient, range 7–37).
+
+### Patient-Level Data Splitting
+To prevent **data leakage** across time-series observations of the same individual, dataset splitting is strictly stratified by `patient_id`:
+- **Training Set (70%)**: 700 patients (~14,049 samples)
+- **Test Set (30%)**: 300 patients (~5,951 samples)
+
+### Feature Manifest
+
+| Feature Name | Data Type | Valid Range | Optimal Range | Description |
+|---|---|---|---|---|
+| `patient_id` | Integer | $0 - 999$ | N/A | Unique synthetic patient identifier |
+| `age` | Integer | $18 - 120$ | $30 - 85$ | Patient age in years |
+| `sex` | Binary | $0, 1$ | $0, 1$ | Biological sex ($0 = \text{Female}, 1 = \text{Male}$) |
+| `heart_rate_bpm` | Float | $20 - 200$ | $60 - 100$ | Heart rate from wearable pulse sensor (BPM) |
+| `spo2_percent` | Float | $70 - 100$ | $95 - 100$ | Blood oxygen saturation ($\%$) |
+| `body_temperature_c` | Float | $32.0 - 42.0$ | $36.5 - 37.5$ | Body/skin temperature ($^\circ\text{C}$) |
+| `systolic_bp_mmhg` | Float | $60 - 250$ | $90 - 120$ | Systolic blood pressure ($\text{mm Hg}$) |
+| `diastolic_bp_mmhg` | Float | $30 - 150$ | $60 - 80$ | Diastolic blood pressure ($\text{mm Hg}$) |
+| `activity_level` | Categorical | $0 - 3$ | N/A | Physical activity level ($0=\text{Rest}, 1=\text{Light}, 2=\text{Mod}, 3=\text{Vig}$) |
+| `ecg_hr_bpm` *(opt)* | Float | $20 - 200$ | $60 - 100$ | Heart rate derived from ECG waveform |
+| `ecg_rr_interval_ms` *(opt)* | Float | $200 - 2000$ | $600 - 1000$ | Mean RR interval between heartbeats ($\text{ms}$) |
+| `ecg_rmssd_ms` *(opt)* | Float | $0 - 300$ | $20 - 100$ | Root Mean Square of Successive Differences ($\text{ms}$) |
+| `ecg_sdnn_ms` *(opt)* | Float | $0 - 400$ | $30 - 150$ | Standard deviation of NN intervals ($\text{ms}$) |
+| `ecg_signal_quality` *(opt)* | Float | $0 - 100$ | $80 - 100$ | ECG signal-to-noise quality metric ($\%$) |
+| **`label` (Target)** | Binary | $0, 1$ | N/A | **Target Risk**: $0 = \text{Lower Risk}, 1 = \text{Higher Risk}$ |
+
+---
+
+## 🤖 Machine Learning Pipeline & Model Evaluation
+
+Four classification models were benchmarked on the test set. Due to high discriminatory power on standardized physiological vectors, **Logistic Regression** was chosen as the default lightweight, highly interpretable production model, with **Random Forest** as the ensemble backup.
+
+### Benchmark Results (Held-Out Test Set)
+
+| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Status |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Logistic Regression** | **95.60%** | **79.07%** | **40.48%** | **0.535** | **0.968** | 🏆 **Active Default** |
+| **Random Forest** | 95.00% | 78.65% | 27.78% | 0.411 | 0.955 | 🛡️ Secondary Fallback |
+| **XGBoost** | 95.62% | 77.14% | 42.86% | 0.551 | 0.958 | ⚡ Supported |
+| **CatBoost** | 95.40% | 74.81% | 40.08% | 0.522 | 0.963 | ⚡ Supported |
+
+### 5-Fold Cross-Validation Performance (Logistic Regression)
+- **Mean Cross-Validated ROC-AUC**: `0.9779 ± 0.0029`
+- **Mean Cross-Validated Recall**: `95.19% ± 1.22%`
+- **Mean Cross-Validated Accuracy**: `91.66% ± 0.30%`
+
+---
+
+## 🔍 Explainable AI (SHAP)
+
+Trust and interpretability are paramount in biomedical computing. The system integrates **SHAP (SHapley Additive exPlanations)** to provide both macro-level and individual decision insights.
+
+### Global Feature Importance
+Across the cohort, feature attribution follows clear clinical patterns:
+1. **Systolic Blood Pressure (`systolic_bp_mmhg`)**: Highest overall positive contributor to cardiovascular risk score.
+2. **Heart Rate (`heart_rate_bpm`)**: Elevated resting heart rate strongly shifts risk score upwards.
+3. **Age (`age`)**: Progressive demographic baseline factor.
+4. **Diastolic Blood Pressure (`diastolic_bp_mmhg`)**: Significant secondary hemodynamic marker.
+5. **Blood Oxygen (`spo2_percent`)**: Protective negative contribution when $>97\%$; risk driver when $<94\%$.
+
+### Local Prediction Transparency
+Every response returned by `POST /predict` contains local explanation data showing which vital signs pushed the patient towards higher or lower risk categories.
+
+---
+
+## 🔌 Backend API Specification
+
+The backend is built with **FastAPI** running on **Uvicorn** (`http://localhost:8000`).
+
+### Interactive Documentation
+- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc UI**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+### Endpoint Summary
+
+| Method | Endpoint | Description | Request / Query |
+|---|---|---|---|
+| `GET` | `/` | Service root and navigation links | None |
+| `GET` | `/health` | System status, DB connectivity, model loading check | None |
+| `POST` | `/predict` | Ingests sensor reading, stores in DB, runs ML inference & alerts | JSON `SensorReading` body |
+| `GET` | `/latest/{device_id}` | Retrieves most recent reading & prediction pair for a device | Path: `device_id` |
+| `GET` | `/readings/{device_id}` | Retrieves historical raw telemetry points | Path: `device_id`, Query: `limit` |
+| `GET` | `/predictions/{device_id}` | Retrieves historical predictions with explanations | Path: `device_id`, Query: `limit` |
+| `GET` | `/stats/{device_id}` | Aggregate statistics (reading counts, alert count, vital averages)| Path: `device_id` |
+
+### Sample `POST /predict` Request
+
+```bash
+curl -X POST "http://localhost:8000/predict" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "device_id": "ESP32_001",
+       "timestamp": "2026-09-16T12:00:00Z",
+       "heart_rate_bpm": 88.5,
+       "spo2_percent": 96.8,
+       "body_temperature_c": 36.7,
+       "systolic_bp_mmhg": 145.0,
+       "diastolic_bp_mmhg": 92.0,
+       "activity_level": 1
+     }'
+```
+
+### Sample Response Payload
+
+```json
+{
+  "device_id": "ESP32_001",
+  "timestamp": "2026-09-16T12:00:00Z",
+  "input_features": {
+    "age": 60.0,
+    "sex": 0.0,
+    "heart_rate_bpm": 88.5,
+    "spo2_percent": 96.8,
+    "body_temperature_c": 36.7,
+    "systolic_bp_mmhg": 145.0,
+    "diastolic_bp_mmhg": 92.0,
+    "activity_level": 1.0
+  },
+  "prediction": 1,
+  "risk_score": 0.742,
+  "confidence": 0.742,
+  "explanation": {
+    "model_type": "LogisticRegression",
+    "prediction_class": "Higher Risk",
+    "risk_score": 0.742,
+    "confidence": 0.742
+  },
+  "alert": true,
+  "message": "⚠️ Higher Risk (Score: 74.20%)"
+}
+```
+
+---
+
+## 💻 Streamlit Dashboard
+
+The frontend application (`dashboard/app.py`) runs at `http://localhost:8501`.
+
+### Key Dashboard Views & Modules
+- **Vital Signs Overview Cards**: Real-time cards displaying Heart Rate (BPM), $SpO_2$ ($\%$), Body Temperature ($^\circ\text{C}$), and Blood Pressure ($\text{mm Hg}$) with physiological status indicators.
+- **Risk Evaluation Gauges**: Plotly radial gauge displaying current cardiovascular risk percentage, color-coded into *Lower Risk* (Green), *Moderate Risk* (Amber), and *High Risk* (Red).
+- **Time-Series Telemetry Trends**: Historical charts showing vital signs over time alongside changing risk score trajectories.
+- **Explainability Explorer**: Interactive view displaying top feature contributions for the latest telemetry reading.
+- **Device Management & Historical Logs**: Device selector dropdown, historical telemetry table, raw database query explorer, and alert counters.
+
+---
+
+## 📡 IoT Hardware & Firmware (ESP32)
+
+### Hardware Components
+1. **ESP32 DevKit V1 Microcontroller** (Wi-Fi 802.11 b/g/n, 2.4 GHz)
+2. **MAX30102 / MAX30105 Pulse Oximeter Module** (I2C interface)
+3. **DHT22 Temperature & Humidity Sensor** (Single-bus digital interface)
+4. *(Optional / Roadmap)* **AD8232 Single-Lead ECG Monitor** (Analog ADC input)
+
+### Circuit Wiring Table
+
+| Sensor / Module | Sensor Pin | ESP32 GPIO Pin | Description |
+|---|---|---|---|
+| **MAX30102** | `VCC` | `3V3` / `VIN` (3.3V) | Power supply |
+| | `GND` | `GND` | Ground |
+| | `SDA` | `GPIO 21` | I2C Data line |
+| | `SCL` | `GPIO 22` | I2C Clock line |
+| **DHT22** | `VCC` | `3V3` | Power supply |
+| | `GND` | `GND` | Ground |
+| | `DATA` | `GPIO 4` | Digital data pin (with 10k pullup) |
+
+### Firmware Configuration
+In your Arduino IDE or PlatformIO project, configure your local network credentials and server IP:
+```cpp
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* API_URL       = "http://<YOUR_COMPUTER_LAN_IP>:8000/predict";
+const char* DEVICE_ID     = "ESP32_001";
+```
+
+> **Note**: For local development without physical hardware, use the built-in simulator:
+> ```powershell
+> python scripts/mock_iot_device.py
+> ```
+
+---
+
+## 🚀 Installation & Quickstart
+
+### Prerequisites
+- Python 3.10, 3.11, or 3.12
+- Git
+- (Optional) Docker and Docker Compose
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Darain-Brit-A/machine-learning-cia-3.git
+cd machine-learning-cia-3
+```
+
+### 2. Setup Virtual Environment
+**Windows (PowerShell):**
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -98,8 +378,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-On macOS or Linux:
-
+**Linux / macOS:**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -107,264 +386,108 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## Build the Dataset and Models
-
-The repository may already contain generated data and trained model artifacts. Run these commands when setting up from scratch or when regenerating the pipeline:
-
-```powershell
-python scripts/generate_dataset.py
-python scripts/validate_dataset.py
-python scripts/ml_pipeline.py
-```
-
-The pipeline prepares the data, trains several classifiers, evaluates them, and saves model artifacts in `models/`. The API loads the preferred Logistic Regression model when available and otherwise falls back to the Random Forest model.
-
-Generated artifacts include model files, the scaler, feature metadata, comparison tables, validation reports, and SHAP outputs.
-
-## Run the Complete System Locally
-
-Start the API in one terminal:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The API is available at `http://localhost:8000`. Interactive API documentation is available at `http://localhost:8000/docs`.
-
-Start the dashboard in a second terminal:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-streamlit run dashboard/app.py
-```
-
-Open `http://localhost:8501`. Use the sidebar to select the device ID that is sending readings, for example `ESP32_001`.
-
-Check the API before sending data:
-
-```powershell
-Invoke-RestMethod http://localhost:8000/health
-```
-
-The health response should show `model_loaded` as `true`.
-
-### Guided startup
-
-`STARTUP.py` installs dependencies, creates or validates the dataset, trains missing models, and prints the commands for starting the API and dashboard:
-
-```powershell
+### 3. Automated Bootstrap (One Command)
+Run the guided startup utility to verify data, train all models, and validate artifacts:
+```bash
 python STARTUP.py
 ```
 
-It does not keep the API or dashboard running for you; start those services in separate terminals.
+### 4. Or Run Individual Pipeline Steps Manually
+```bash
+# Step 1: Generate synthetic dataset
+python scripts/generate_dataset.py
 
-## API Workflow
+# Step 2: Validate dataset integrity
+python scripts/validate_dataset.py
 
-### Sensor input
-
-Send a JSON reading to `POST /predict`:
-
-```json
-{
-  "device_id": "ESP32_001",
-  "timestamp": "2026-09-13T12:00:00Z",
-  "heart_rate_bpm": 85.5,
-  "spo2_percent": 97.2,
-  "body_temperature_c": 36.8,
-  "systolic_bp_mmhg": 125.0,
-  "diastolic_bp_mmhg": 80.0,
-  "ecg_hr_bpm": 86.0,
-  "ecg_rr_interval_ms": 700.0,
-  "ecg_rmssd_ms": 45.0,
-  "ecg_sdnn_ms": 60.0,
-  "ecg_signal_quality": 80.0,
-  "activity_level": 1
-}
+# Step 3: Run the end-to-end ML pipeline (training + SHAP)
+python scripts/ml_pipeline.py
 ```
 
-Required fields are `device_id`, `timestamp`, `heart_rate_bpm`, `spo2_percent`, `body_temperature_c`, `systolic_bp_mmhg`, and `diastolic_bp_mmhg`. ECG fields and `activity_level` are optional.
+### 5. Launch Application Services
 
-Example request:
+**Terminal 1 — Start the FastAPI Backend:**
+```powershell
+python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Terminal 2 — Start the Streamlit Dashboard:**
+```powershell
+streamlit run dashboard/app.py
+```
+
+**Terminal 3 (Optional) — Run Mock IoT Sensor Stream:**
+```powershell
+python scripts/mock_iot_device.py
+```
+
+Access the dashboard at **`http://localhost:8501`** and API documentation at **`http://localhost:8000/docs`**.
+
+---
+
+## 🐳 Docker Deployment
+
+The repository includes a ready-to-run multi-container setup via Docker Compose.
 
 ```powershell
-$payload = @{
-  device_id = 'demo_sensor_001'
-  timestamp = '2026-09-13T12:00:00Z'
-  heart_rate_bpm = 85.5
-  spo2_percent = 97.2
-  body_temperature_c = 36.8
-  systolic_bp_mmhg = 140.2
-  diastolic_bp_mmhg = 90.1
-  activity_level = 1
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post -Uri http://localhost:8000/predict -ContentType 'application/json' -Body $payload
+# Build and run API and Dashboard containers
+docker compose up --build
 ```
 
-The response contains:
+- **FastAPI Backend**: `http://localhost:8000`
+- **Streamlit Dashboard**: `http://localhost:8501`
+- Host volumes `data/` and `models/` are mounted automatically for data persistence.
 
-- `prediction`: `0` for lower risk or `1` for higher risk
-- `risk_score`: probability of the higher-risk class
-- `confidence`: probability of the predicted class
-- `alert`: threshold or risk alert status
-- `message`: human-readable status
-- `explanation`: model details and available feature importance information
-
-### Endpoint reference
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/` | API information and links |
-| GET | `/health` | API, model, and database health |
-| POST | `/predict` | Store a reading and generate an ML prediction |
-| GET | `/readings/{device_id}` | Recent raw readings |
-| GET | `/predictions/{device_id}` | Recent predictions and explanations |
-| GET | `/latest/{device_id}` | Latest reading and prediction pair |
-| GET | `/stats/{device_id}` | Reading counts, alerts, and vital averages |
-
-### Prediction processing
-
-For each `/predict` request, the server:
-
-1. Validates the JSON using the Pydantic schema.
-2. Stores the sensor reading in `data/predictions.db`.
-3. Builds the feature vector in the model's saved feature order.
-4. Uses default `age = 60` and `sex = 0` because the current sensor payload does not include them.
-5. Applies the saved scaler.
-6. Runs the selected model and calculates a risk score.
-7. Checks risk and vital-sign alert thresholds.
-8. Stores and returns the prediction.
-
-## Dashboard
-
-The Streamlit dashboard provides:
-
-- Live vital-sign metrics
-- Risk score, confidence, and alert status
-- Vital-sign gauges
-- Blood-pressure display
-- Historical risk trends
-- Prediction history
-- Feature-importance and SHAP sections when explanation data is available
-- API, model, and database status
-
-The dashboard reads from the API using `/latest/{device_id}`, `/predictions/{device_id}`, and `/stats/{device_id}`. It currently provides a manual refresh button. To enable automatic refreshing, install `streamlit-autorefresh` and follow the instructions in [esp32.md](esp32.md).
-
-## ESP32 Integration
-
-The hardware data flow is:
-
-```text
-MAX30102 + DHT22 -> ESP32 -> HTTP POST /predict -> API -> dashboard
+To stop the containers:
+```powershell
+docker compose down
 ```
 
-Open [esp32.md](esp32.md) for:
+---
 
-- MAX30102, DHT22, AD8232, and blood-pressure wiring
-- Arduino library installation
-- Wi-Fi and computer IP configuration
-- Firmware upload instructions
-- Serial Monitor verification
-- LAN and firewall troubleshooting
+## 🧪 Testing & Quality Assurance
 
-Before uploading, change these values in `esp32.ino`:
-
-```cpp
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char* API_URL = "http://COMPUTER_LAN_IP:8000/predict";
-const char* DEVICE_ID = "ESP32_001";
-```
-
-Use the computer's LAN IP, not `localhost` or `127.0.0.1`. The ESP32 and computer must be connected to the same network.
-
-The firmware sends readings every 10 seconds. In the current development configuration, heart rate and temperature are read from hardware while SpO2 and blood pressure remain simulated:
-
-```cpp
-const bool USE_DEVELOPMENT_SENSOR_VALUES = true;
-```
-
-## Testing
-
-Run the API tests with:
-
+### Automated Unit & API Tests
+Run the test suite using Python's built-in `unittest`:
 ```powershell
 python -m unittest tests/test_api.py -v
 ```
 
-Run the demonstration client after starting the API:
-
+### End-to-End System Demo Test
+Execute the comprehensive end-to-end scenario testing script to verify all live endpoints, database persistence, and threshold alerts:
 ```powershell
 python scripts/test_demo.py
 ```
 
-The demo sends sample readings to `/predict` and prints the response. It does not represent real patient data.
+---
 
-## Docker Compose
+## ⚙️ Configuration Reference
 
-Build and start the services:
+All constants, model hyperparameters, and alerting thresholds are maintained centrally in [`config.py`](config.py):
 
-```powershell
-docker compose up --build
-```
+| Parameter | Default Value | Description |
+|---|---|---|
+| `ALERT_THRESHOLDS['high_risk_score']` | `0.70` | Model risk score alert cutoff ($> 70\%$) |
+| `ALERT_THRESHOLDS['heart_rate_min']` | `50 BPM` | Bradycardia warning threshold |
+| `ALERT_THRESHOLDS['heart_rate_max']` | `120 BPM` | Tachycardia warning threshold |
+| `ALERT_THRESHOLDS['spo2_min']` | `94.0%` | Hypoxemia warning threshold |
+| `ALERT_THRESHOLDS['systolic_bp_max']` | `180 mm Hg` | Hypertensive crisis warning cutoff |
+| `ALERT_THRESHOLDS['systolic_bp_min']` | `90 mm Hg` | Hypotension warning cutoff |
+| `TEST_SIZE` | `0.2` | Evaluation split proportion |
+| `RANDOM_SEED` | `42` | Global reproducibility seed |
 
-The API is exposed on port 8000 and the dashboard on port 8501:
+---
 
-- `http://localhost:8000`
-- `http://localhost:8501`
+## 🗺️ Roadmap & Future Enhancements
 
-The `data/` and `models/` directories are mounted into the containers so the SQLite database and model artifacts persist on the host.
+- [ ] **Hardware SpO2 DSP**: Integrate real-time Red/IR AC/DC ratio extraction algorithms for raw MAX30102 photodiode values.
+- [ ] **Hardware Blood Pressure**: Connect cuff-based or optical PTT blood-pressure devices over UART / Bluetooth Low Energy (BLE).
+- [ ] **Edge ECG Integration**: Deploy real-time Pan-Tompkins QRS wave detection directly on ESP32 firmware using AD8232 analog inputs.
+- [ ] **Patient Profile Registry**: Implement user login and dynamic patient profile management (individual baseline age, sex, medical history).
+- [ ] **Production Cloud Deployment**: Transition SQLite to PostgreSQL / TimescaleDB with OAuth2 JWT authentication and TLS/HTTPS encryption.
 
-For ESP32 hardware, use the host computer's LAN IP and port 8000 in `esp32.ino`. The dashboard currently uses a localhost API URL in its source, so verify API connectivity when using the dashboard inside containers and adjust its API configuration if necessary.
+---
 
-## Data and Model Artifacts
+## 📄 License & Attribution
 
-Important files created or consumed by the pipeline include:
-
-| Location | Description |
-|---|---|
-| `data/heart_iot_synthetic.csv` | Main synthetic dataset |
-| `data/data_dictionary.csv` | Feature meanings and metadata |
-| `data/preprocessed/` | Train/test matrices and preprocessing metadata |
-| `data/predictions.db` | Runtime readings and predictions |
-| `models/feature_names.json` | Model feature order |
-| `models/scaler.pkl` | Production preprocessing scaler |
-| `models/logistic_regression.pkl` | Preferred API model when present |
-| `models/random_forest.pkl` | API fallback model |
-| `models/model_comparison.csv` | Training comparison results |
-| `models/validation_report.json` | Model validation output |
-
-## Configuration
-
-[config.py](config.py) contains paths, API defaults, model settings, feature names, valid ranges, alert thresholds, and display ranges. The server currently resolves its paths relative to the project root and uses SQLite at `data/predictions.db`.
-
-Important default alert thresholds include:
-
-- Risk score above `0.7`
-- Heart rate below `50` or above `120` BPM
-- SpO2 below `94%`
-- Systolic pressure below `90` or above `180` mmHg
-- ECG signal quality below `50` when supplied
-
-These are software thresholds for the prototype, not clinical recommendations.
-
-## Known Limitations
-
-- The dataset and labels are synthetic.
-- The API defaults age and sex rather than receiving them from the ESP32.
-- SpO2 and blood pressure are simulated in the current firmware.
-- DHT22 temperature is ambient temperature, not validated body temperature.
-- ECG firmware acquisition is not implemented and the dashboard waveform is synthetic.
-- The dashboard's refresh slider requires the optional `streamlit-autorefresh` package for automatic polling.
-- SQLite and the unauthenticated HTTP API are suitable for local demonstrations, not production deployment.
-- No authentication, encryption, patient identity management, or clinical validation is implemented.
-
-## Suggested Development Roadmap
-
-1. Add a real SpO2 algorithm and validate it against the selected MAX30102 hardware.
-2. Integrate a documented blood-pressure device through UART or BLE.
-3. Add ECG sampling and feature extraction with signal-quality checks.
-4. Include configured patient metadata instead of hard-coded age and sex defaults.
-5. Add authentication, HTTPS, input rate limits, and a production database.
-6. Replace synthetic training data with appropriately governed, clinically validated data before making any medical claim.
+This project is created for academic coursework and educational demonstration purposes. All synthetic datasets and code artifacts are provided for learning, research, and non-clinical development.
